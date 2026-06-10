@@ -4,3 +4,6 @@ app/.build/
 *.pyc
 __pycache__/
 docs/
+prototype/build/
+prototype/dist/
+prototype/*.spec
