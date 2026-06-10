@@ -7,7 +7,7 @@ A macOS menubar app that sends screenshots and short recordings directly into a 
 - **⌥⌘C** — area capture, preview, annotate with arrows, send
 - **⌥⌘R** — record a region as a frame sequence (perceptually deduped, max 20 frames)
 - Session picker across all live Claude Code sessions; preselects the focused one
-- Sent images are also copied to the clipboard at full resolution
+- "Copy to Clipboard" button copies the annotated capture at full resolution instead of sending
 - Images sent to Claude are downscaled to keep token usage reasonable
 - Launch at login; captures auto-prune after 7 days
 
