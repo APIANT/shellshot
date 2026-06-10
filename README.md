@@ -2,6 +2,8 @@
 
 A macOS menubar app that sends screenshots and short recordings directly into a running Claude Code iTerm2 terminal session. Also supports sending screenshots from an iPad/iPhone on the same WiFi network.
 
+![ShellShot demo](media/demo.gif)
+
 ## Features
 
 - **⌥⌘C** — area capture, preview, annotate with arrows, send
