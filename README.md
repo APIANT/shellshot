@@ -35,9 +35,9 @@ Send a screenshot from an iPad or iPhone (on the same Wi-Fi as the Mac) into a C
 
 1. In the ShellShot menu, enable **iPad Sharing**, then choose **Set Up iPad Shortcut…** — a QR code appears with the Mac's address and a token baked in.
 2. On the device, point the Camera at the QR code, tap the banner, and **Add Shortcut**.
-3. To use it: take a screenshot, tap **Share**, and pick **ShellShot**. Add an optional message; it posts to the Mac and lands in the focused session.
+3. To use it: take a screenshot, tap **Share**, and pick **ShellShot**. Choose which Claude session to send to (the focused one is marked ●), add an optional message, and it posts to the Mac.
 
-The Mac runs a small token-guarded HTTP listener (port 8472) for this; it's off by default and LAN-only. Auto-injection targets the focused session, downscaling images the same way as local captures.
+The Mac runs a small token-guarded HTTP listener (port 8472) for this; it's off by default and LAN-only. Images are downscaled the same way as local captures.
 
 ## License
 

@@ -118,6 +118,17 @@ final class HTTPServer {
             let data = (try? JSONEncoder().encode(sessions)) ?? Data("[]".utf8)
             send(conn, "200 OK", "application/json", data)
 
+        case ("GET", "/labels"):
+            // A JSON array of display strings. A Shortcut "Get Contents of URL"
+            // turns a JSON-array response into a list it can Choose from
+            // directly. The session id is appended in ⟦…⟧ so /inject recovers it.
+            let sessions = onListSessions?() ?? []
+            let labels = sessions.map {
+                ($0.isActive == true ? "● " : "") + $0.displayName + " ⟦\($0.sessionId.prefix(8))⟧"
+            }
+            let data = (try? JSONEncoder().encode(labels)) ?? Data("[]".utf8)
+            send(conn, "200 OK", "application/json", data)
+
         case ("POST", "/inject"):
             let session = req.headers["x-session"] ?? req.query["session"]
             let message = req.headers["x-message"] ?? req.query["message"]

@@ -216,9 +216,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             let sessions = try Sidecar.listSessions()
             guard !sessions.isEmpty else { throw SidecarError.failed("No Claude sessions") }
-            let sid = sessionId
-                ?? sessions.first(where: { $0.isActive == true })?.sessionId
-                ?? sessions.first!.sessionId
+            let sid = Self.resolveSession(sessionId, in: sessions)
             let opt = Optimizer.downscale(path)
             try Sidecar.inject(sessionId: sid, imagePaths: [opt], message: message ?? "")
             return sessions.first(where: { $0.sessionId == sid })?.displayName ?? sid
@@ -237,6 +235,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             alert("Could not start iPad listener on port \(Self.listenerPort): \(error.localizedDescription)")
             listenerItem?.state = .off
         }
+    }
+
+    /// Resolve a session from an /inject request: the value may be an exact
+    /// session id, a /labels string with the id in ⟦…⟧, or a display-name
+    /// substring. Falls back to the focused session, then the most recent.
+    static func resolveSession(_ raw: String?, in sessions: [Session]) -> String {
+        if let raw, !raw.isEmpty {
+            if let l = raw.range(of: "⟦"), let r = raw.range(of: "⟧"), l.upperBound <= r.lowerBound {
+                let id = String(raw[l.upperBound..<r.lowerBound])
+                // /labels shows an 8-char prefix, so match by prefix (or exact).
+                if let m = sessions.first(where: { $0.sessionId == id || $0.sessionId.hasPrefix(id) }) {
+                    return m.sessionId
+                }
+            }
+            if sessions.contains(where: { $0.sessionId == raw }) { return raw }
+            if let m = sessions.first(where: { $0.displayName.contains(raw) }) { return m.sessionId }
+        }
+        return sessions.first(where: { $0.isActive == true })?.sessionId ?? sessions.first!.sessionId
     }
 
     @objc func setUpIPadShortcut() {
