@@ -1,6 +1,6 @@
 # ShellShot
 
-A macOS menubar app that sends screenshots directly into a running Claude Code terminal session.
+A macOS menubar app that sends screenshots directly into a running Claude Code iTerm2 terminal session.
 
 ## The problem
 
