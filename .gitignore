@@ -3,3 +3,4 @@ prototype/.venv/
 app/.build/
 *.pyc
 __pycache__/
+docs/

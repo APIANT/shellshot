@@ -70,10 +70,6 @@ One field note for anyone building on the same trick: don't trust iTerm2's `jobN
 - HTTP listener + iPadOS Shortcut — capture on the iPad, land in the laptop's session
 - Clipboard-paste fallback for Terminal.app / VS Code / Warp
 
-## Provenance
-
-Designed and built in one day, almost entirely by Claude Code — the research, the architecture, the Swift, the Python, the icon, this README. The feasibility work that killed three wrong architectures before finding the terminal-level one is preserved in [docs/product-brief.md](docs/product-brief.md). Yes, the tool for talking to Claude was built by talking to Claude.
-
 ## License
 
 MIT © APIANT Inc.
