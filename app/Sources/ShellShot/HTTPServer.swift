@@ -122,9 +122,12 @@ final class HTTPServer {
             // A JSON array of display strings. A Shortcut "Get Contents of URL"
             // turns a JSON-array response into a list it can Choose from
             // directly. The session id is appended in ⟦…⟧ so /inject recovers it.
+            // Short id goes FIRST: the iPad Shortcut truncates the chosen line
+            // at the first space when sending it back, so the id must survive
+            // as the leading whitespace-free token. /inject routes on it.
             let sessions = onListSessions?() ?? []
             let labels = sessions.map {
-                ($0.isActive == true ? "● " : "") + $0.displayName + " ⟦\($0.sessionId.prefix(8))⟧"
+                "\($0.sessionId.prefix(8))  \($0.displayName)\($0.isActive == true ? " ●" : "")"
             }
             let data = (try? JSONEncoder().encode(labels)) ?? Data("[]".utf8)
             send(conn, "200 OK", "application/json", data)

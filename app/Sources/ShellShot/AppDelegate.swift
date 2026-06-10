@@ -242,14 +242,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// substring. Falls back to the focused session, then the most recent.
     static func resolveSession(_ raw: String?, in sessions: [Session]) -> String {
         if let raw, !raw.isEmpty {
+            // The routing key is a session-id prefix. It arrives either as the
+            // leading token of a "<id8>  <name>" label, an old ⟦id⟧ tag, or a
+            // bare id (the Shortcut may truncate the label at the first space).
+            var key = raw
             if let l = raw.range(of: "⟦"), let r = raw.range(of: "⟧"), l.upperBound <= r.lowerBound {
-                let id = String(raw[l.upperBound..<r.lowerBound])
-                // /labels shows an 8-char prefix, so match by prefix (or exact).
-                if let m = sessions.first(where: { $0.sessionId == id || $0.sessionId.hasPrefix(id) }) {
-                    return m.sessionId
-                }
+                key = String(raw[l.upperBound..<r.lowerBound])
+            } else if let first = raw.split(separator: " ").first {
+                key = String(first)
             }
-            if sessions.contains(where: { $0.sessionId == raw }) { return raw }
+            if let m = sessions.first(where: { $0.sessionId == key || $0.sessionId.hasPrefix(key) }) {
+                return m.sessionId
+            }
             if let m = sessions.first(where: { $0.displayName.contains(raw) }) { return m.sessionId }
         }
         return sessions.first(where: { $0.isActive == true })?.sessionId ?? sessions.first!.sessionId
