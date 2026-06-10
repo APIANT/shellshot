@@ -5,6 +5,16 @@ cd "$(dirname "$0")"
 
 swift build -c release
 
+# self-contained Python sidecar (PyInstaller)
+SIDECAR_DIST="../prototype/dist/shellshot-sidecar"
+if [ ! -x "$SIDECAR_DIST/shellshot-sidecar" ]; then
+    echo "Building sidecar with PyInstaller..."
+    ../prototype/.venv/bin/pyinstaller --onedir --name shellshot-sidecar \
+        --noconfirm --log-level WARN \
+        --distpath ../prototype/dist --workpath ../prototype/build \
+        --specpath ../prototype ../prototype/shellshot.py
+fi
+
 APP=".build/ShellShot.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
@@ -31,6 +41,7 @@ EOF
 
 mkdir -p "$APP/Contents/Resources"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp -R "$SIDECAR_DIST" "$APP/Contents/Resources/sidecar"
 cp .build/release/ShellShot "$APP/Contents/MacOS/ShellShot"
 codesign --force --sign - "$APP"
 

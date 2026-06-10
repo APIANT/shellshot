@@ -46,13 +46,25 @@ enum Sidecar {
         return URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("shellshot")
     }
 
-    private static var python: String { root.appendingPathComponent("prototype/.venv/bin/python").path }
-    private static var script: String { root.appendingPathComponent("prototype/shellshot.py").path }
+    /// Prefer the PyInstaller-bundled sidecar inside the .app; fall back to
+    /// the dev venv + script for `swift run` during development.
+    private static var command: [String] {
+        if let bundled = Bundle.main.resourceURL?
+            .appendingPathComponent("sidecar/shellshot-sidecar").path,
+            FileManager.default.isExecutableFile(atPath: bundled) {
+            return [bundled]
+        }
+        return [
+            root.appendingPathComponent("prototype/.venv/bin/python").path,
+            root.appendingPathComponent("prototype/shellshot.py").path,
+        ]
+    }
 
     private static func run(_ args: [String]) throws -> (status: Int32, stdout: String, stderr: String) {
+        let cmd = command
         let p = Process()
-        p.executableURL = URL(fileURLWithPath: python)
-        p.arguments = [script] + args
+        p.executableURL = URL(fileURLWithPath: cmd[0])
+        p.arguments = Array(cmd.dropFirst()) + args
         let out = Pipe(), err = Pipe()
         p.standardOutput = out
         p.standardError = err
