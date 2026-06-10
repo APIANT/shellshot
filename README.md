@@ -2,12 +2,6 @@
 
 A macOS menubar app that sends screenshots and short recordings directly into a running Claude Code iTerm2 terminal session.
 
-## The problem
-
-Sharing what's on your screen with Claude Code is tedious: take a screenshot, save it, locate the file, drag it into the terminal. There is no supported way to inject a message into a running session from outside ([#53049](https://github.com/anthropics/claude-code/issues/53049), [#24947](https://github.com/anthropics/claude-code/issues/24947), [#27441](https://github.com/anthropics/claude-code/issues/27441)).
-
-ShellShot goes through the terminal instead: iTerm2's Python API can send text to any session as if it were typed, and Claude Code reads image paths from a prompt. Press a hotkey, select a screen region, optionally draw an arrow and add a message, and it lands in the session you choose — using your existing Claude subscription, no API key.
-
 ## Features
 
 - **⌥⌘C** — area capture, preview, annotate with arrows, send
