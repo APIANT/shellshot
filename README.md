@@ -12,7 +12,7 @@ A macOS menubar app that sends screenshots and short recordings directly into a 
 - Images sent to Claude are downscaled to keep token usage reasonable
 - Launch at login; captures auto-prune after 7 days
 
-**Supports macOS + iTerm2 only.** tmux, Kitty, and WezTerm adapters are planned.
+**Supports macOS + iTerm2 only.** tmux, Kitty, and WezTerm adapters are possible.
 
 ## Install
 
