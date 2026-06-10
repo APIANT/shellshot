@@ -2,6 +2,8 @@
 
 A macOS menubar app that sends screenshots and short recordings directly into a running Claude Code iTerm2 terminal session. Also supports sending screenshots from an iPad/iPhone on the same WiFi network.
 
+**[⬇ Download for Apple Silicon (v0.1.0)](https://github.com/APIANT/shellshot/releases/latest)** — or [build from source](#install).
+
 ![ShellShot demo](media/demo.gif)
 
 ## Features
@@ -18,7 +20,19 @@ A macOS menubar app that sends screenshots and short recordings directly into a 
 
 ## Install
 
-Requires macOS 13+, [iTerm2](https://iterm2.com) with **Settings → General → Magic → Enable Python API**, and Python 3 (build time only).
+Requires macOS 13+ and [iTerm2](https://iterm2.com) with **Settings → General → Magic → Enable Python API**.
+
+### Download (Apple Silicon)
+
+Grab the [latest release](https://github.com/APIANT/shellshot/releases/latest), unzip, and move `ShellShot.app` to `/Applications`. The build is ad-hoc signed (not notarized), so clear Gatekeeper's quarantine once:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/ShellShot.app
+```
+
+### Build from source
+
+Requires Python 3 (build time only; the app embeds a self-contained sidecar).
 
 ```bash
 git clone https://github.com/APIANT/shellshot ~/shellshot
