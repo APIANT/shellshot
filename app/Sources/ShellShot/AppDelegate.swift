@@ -46,14 +46,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             login.state = SMAppService.mainApp.status == .enabled ? .on : .off
             menu.addItem(login)
         }
-        let listener = NSMenuItem(title: "iPad Sharing (port \(Self.listenerPort))", action: #selector(toggleListener(_:)), keyEquivalent: "")
+        let listener = NSMenuItem(title: "iPad/iPhone Sharing (port \(Self.listenerPort))", action: #selector(toggleListener(_:)), keyEquivalent: "")
         listener.target = self
         menu.addItem(listener)
         listenerItem = listener
-        let setup = NSMenuItem(title: "Set Up iPad Shortcut…", action: #selector(setUpIPadShortcut), keyEquivalent: "")
+        let setup = NSMenuItem(title: "Set Up iPad/iPhone Shortcut…", action: #selector(setUpIPadShortcut), keyEquivalent: "")
         setup.target = self
         menu.addItem(setup)
-        let pairing = NSMenuItem(title: "Copy iPad Pairing Info", action: #selector(copyPairingInfo), keyEquivalent: "")
+        let pairing = NSMenuItem(title: "Copy iPad/iPhone Pairing Info", action: #selector(copyPairingInfo), keyEquivalent: "")
         pairing.target = self
         menu.addItem(pairing)
         menu.addItem(.separator())
@@ -256,14 +256,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func copyPairingInfo() {
         let host = ProcessInfo.processInfo.hostName
         let info = """
-        ShellShot iPad pairing
+        ShellShot iPad/iPhone pairing
         URL:   http://\(host):\(Self.listenerPort)/inject?token=\(Self.pairingToken)
         Token: \(Self.pairingToken)
 
         Build a Shortcut: Take Screenshot → Get Contents of URL (POST,
         Request Body = File/the screenshot, Header X-Message = your text)
-        with the URL above. iPad and Mac must be on the same Wi-Fi, and
-        'iPad Sharing' must be enabled in the ShellShot menu.
+        with the URL above. The device and Mac must be on the same Wi-Fi,
+        and 'iPad/iPhone Sharing' must be enabled in the ShellShot menu.
         """
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(info, forType: .string)
