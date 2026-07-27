@@ -7,7 +7,9 @@ swift build -c release
 
 # self-contained Python sidecar (PyInstaller)
 SIDECAR_DIST="../prototype/dist/shellshot-sidecar"
-if [ ! -x "$SIDECAR_DIST/shellshot-sidecar" ]; then
+# Rebuild when the source is newer, or the app ships a stale sidecar.
+if [ ! -x "$SIDECAR_DIST/shellshot-sidecar" ] \
+   || [ ../prototype/shellshot.py -nt "$SIDECAR_DIST/shellshot-sidecar" ]; then
     echo "Building sidecar with PyInstaller..."
     ../prototype/.venv/bin/pyinstaller --onedir --name shellshot-sidecar \
         --noconfirm --log-level WARN \
@@ -29,7 +31,7 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
     <key>CFBundleIdentifier</key>      <string>com.apiant.shellshot</string>
     <key>CFBundleExecutable</key>      <string>ShellShot</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
-    <key>CFBundleShortVersionString</key> <string>0.1.0</string>
+    <key>CFBundleShortVersionString</key> <string>0.2.0</string>
     <key>CFBundleVersion</key>         <string>1</string>
     <key>LSMinimumSystemVersion</key>  <string>13.0</string>
     <key>LSUIElement</key>             <true/>

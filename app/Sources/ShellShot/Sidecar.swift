@@ -96,6 +96,18 @@ enum Sidecar {
             throw SidecarError.failed(r.stderr.isEmpty ? r.stdout : r.stderr)
         }
     }
+
+    /// Type a saved phrase into a session. `submit: false` leaves it in the
+    /// prompt for the user to finish.
+    static func sendText(sessionId: String, text: String, submit: Bool) throws {
+        var args = ["send", "--session", sessionId, "--no-capture"]
+        if !submit { args.append("--no-submit") }
+        args += ["--", text] // a phrase may legitimately start with "-"
+        let r = try run(args)
+        guard r.status == 0 else {
+            throw SidecarError.failed(r.stderr.isEmpty ? r.stdout : r.stderr)
+        }
+    }
 }
 
 enum SidecarError: LocalizedError {

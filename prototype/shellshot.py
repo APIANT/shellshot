@@ -10,6 +10,7 @@ Options for send:
   --session ID      Target iTerm2 session id (default: most relevant claude session)
   --image PATH      Use existing image(s) instead of capturing (repeatable)
   --no-capture      Send message only, no image
+  --no-submit       Type the text but don't press Enter
   --full            Capture full screen (non-interactive) instead of area select
   --dry-run         Print what would be sent, don't inject
 """
@@ -127,7 +128,7 @@ def bracketed(text):
     return "\x1b[200~" + text + "\x1b[201~"
 
 
-async def inject(session, image_paths, message):
+async def inject(session, image_paths, message, submit=True):
     parts = []
     if len(image_paths) == 1:
         parts.append(f"Look at {image_paths[0]}")
@@ -138,11 +139,14 @@ async def inject(session, image_paths, message):
         )
     if message:
         parts.append(message)
+    if not parts:
+        return ""
     text = " — ".join(parts) if len(parts) == 2 else parts[0]
     payload = bracketed(text) if "\n" in text else text
     await session.async_send_text(payload, suppress_broadcast=True)
-    await asyncio.sleep(0.15)  # let the TUI ingest the paste before submit
-    await session.async_send_text("\r", suppress_broadcast=True)
+    if submit:
+        await asyncio.sleep(0.15)  # let the TUI ingest the paste before submit
+        await session.async_send_text("\r", suppress_broadcast=True)
     return text
 
 
@@ -201,7 +205,7 @@ async def amain(connection, args):
         print(f"  message: {args.message}")
         return
 
-    text = await inject(session, images, args.message)
+    text = await inject(session, images, args.message, submit=not args.no_submit)
     print(f"Injected into {info['session_id']} ({info['path'] or 'cwd ?'}):")
     print(f"  {text!r}")
 
@@ -215,6 +219,8 @@ def main():
     ps.add_argument("--session")
     ps.add_argument("--image", action="append")
     ps.add_argument("--no-capture", action="store_true")
+    ps.add_argument("--no-submit", action="store_true",
+                    help="type the text but don't press Enter")
     ps.add_argument("--full", action="store_true")
     ps.add_argument("--dry-run", action="store_true")
     ps.add_argument("message", nargs="?", default="")

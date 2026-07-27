@@ -10,6 +10,7 @@ A macOS menubar app that sends screenshots and short recordings directly into a 
 
 - **⌥⌘C** — area capture, preview, annotate with arrows, send
 - **⌥⌘R** — record a region as a frame sequence (perceptually deduped, max 20 frames)
+- **⌥⌘K** — phrases: a searchable list of instructions you type over and over, sent into the focused session (see [Phrases](#phrases))
 - Session picker across all live Claude Code sessions; preselects the focused one
 - "Copy to Clipboard" button copies the annotated capture at full resolution instead of sending
 - **iPad/iPhone sharing** — send a screenshot from an iPad or iPhone on the same Wi-Fi into a Mac session via an auto-generated Shortcut
@@ -17,6 +18,30 @@ A macOS menubar app that sends screenshots and short recordings directly into a 
 - Launch at login; captures auto-prune after 7 days
 
 **Supports macOS + iTerm2 only.** tmux, Kitty, and WezTerm adapters are possible.
+
+## Phrases
+
+Instructions you send constantly ("merge pr, deploy local+prod (override)") live
+in a plain text file you edit yourself — **Edit Phrases…** in the menu opens it,
+and saving takes effect immediately:
+
+```
+=== merge and deploy
+merge pr, deploy local+prod (override)
+
+=== commit [type]
+commit and push
+```
+
+A `===` line names a phrase; the lines under it are what gets sent. Phrases go
+to the session you're currently looking at, with Enter pressed for you. Add
+`[type]` after the name to have it typed into the prompt and left there instead,
+and hold **Option** while picking to do the opposite of whatever a phrase
+normally does.
+
+Reach them from the menubar, or hit **⌥⌘K** for a search box — type a few
+letters, Enter, done. The file lives at
+`~/Library/Application Support/ShellShot/phrases.txt`.
 
 ## Install
 
