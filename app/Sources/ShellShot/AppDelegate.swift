@@ -2,7 +2,7 @@ import AppKit
 import Carbon.HIToolbox
 import ServiceManagement
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var captureKey: HotKey?
     private var recordKey: HotKey?
@@ -12,6 +12,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var server: HTTPServer?
     private var listenerItem: NSMenuItem?
     private let pairingWindow = PairingWindowController()
+    private var phraseKey: HotKey?
+    private let phrasePanel = PhrasePanelController()
+
+    /// Menu items rebuilt from the phrase file each time the menu opens.
+    private static let phraseTag = 900
+
+    /// Last known session list. The menu can't wait on the sidecar without
+    /// stalling, so it shows this and refreshes for the next open.
+    private var cachedSessions: [Session] = []
 
     static let listenerPort: UInt16 = 8472
 
@@ -23,9 +32,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return t
     }
 
-    static var shotDir: URL {
+    static var supportDir: URL {
         URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("Library/Application Support/ShellShot/shots")
+            .appendingPathComponent("Library/Application Support/ShellShot")
+    }
+
+    static var shotDir: URL {
+        supportDir.appendingPathComponent("shots")
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -33,12 +46,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setIcon(recording: false)
 
         let menu = NSMenu()
+        menu.delegate = self
+        let phraseSearch = NSMenuItem(title: "Send Phrase… (⌥⌘K)", action: #selector(showPhrasePanel), keyEquivalent: "")
+        phraseSearch.target = self
+        menu.addItem(phraseSearch)
+        let editPhrases = NSMenuItem(title: "Edit Phrases…", action: #selector(editPhrases), keyEquivalent: "")
+        editPhrases.target = self
+        menu.addItem(editPhrases)
+        menu.addItem(.separator())
         let capture = NSMenuItem(title: "Capture & Send (⌥⌘C)", action: #selector(captureAndSend), keyEquivalent: "")
         capture.target = self
         menu.addItem(capture)
         let record = NSMenuItem(title: "Record & Send (⌥⌘R)", action: #selector(toggleRecord), keyEquivalent: "")
         record.target = self
         menu.addItem(record)
+        menu.addItem(.separator())
+        let clipboardDefault = NSMenuItem(title: "Copy to Clipboard by Default", action: #selector(toggleClipboardDefault(_:)), keyEquivalent: "")
+        clipboardDefault.target = self
+        clipboardDefault.state = UserDefaults.standard.bool(forKey: "copyToClipboardDefault") ? .on : .off
+        menu.addItem(clipboardDefault)
         menu.addItem(.separator())
         if Bundle.main.bundleIdentifier != nil {
             let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin(_:)), keyEquivalent: "")
@@ -80,7 +106,124 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] in
             self?.toggleRecord()
         }
+        phraseKey = HotKey(
+            keyCode: UInt32(kVK_ANSI_K),
+            modifiers: UInt32(optionKey | cmdKey)
+        ) { [weak self] in
+            self?.showPhrasePanel()
+        }
         recorder.onAutoStop = { [weak self] in self?.toggleRecord() }
+        Phrases.createDefaultFile()
+        refreshSessions() // so the first menu open shows a real target, not "none"
+    }
+
+    // MARK: - Phrases
+
+    /// Rebuild the phrase section from the file every time the menu opens, so
+    /// an edit shows up without a restart.
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        for item in menu.items where item.tag == Self.phraseTag {
+            menu.removeItem(item)
+        }
+        refreshSessions()
+        var i = 0
+        let target = NSMenuItem(title: targetLabel(), action: nil, keyEquivalent: "")
+        target.tag = Self.phraseTag
+        target.isEnabled = false
+        menu.insertItem(target, at: i)
+        i += 1
+        for phrase in Phrases.load() {
+            let item = NSMenuItem(title: phrase.name, action: #selector(sendPhraseFromMenu(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = Self.phraseTag
+            item.toolTip = phrase.text
+            item.representedObject = phrase
+            menu.insertItem(item, at: i)
+            i += 1
+        }
+        if i > 0 {
+            let sep = NSMenuItem.separator()
+            sep.tag = Self.phraseTag
+            menu.insertItem(sep, at: i)
+        }
+    }
+
+    /// Where a phrase picked right now would land, from the cached list.
+    private func targetLabel() -> String {
+        guard !cachedSessions.isEmpty else { return "No Claude Code session in iTerm2" }
+        let sid = Self.resolveSession(nil, in: cachedSessions)
+        let name = cachedSessions.first(where: { $0.sessionId == sid })?.displayName ?? sid
+        return "→ \(name)"
+    }
+
+    private func refreshSessions() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let sessions = (try? Sidecar.listSessions()) ?? []
+            DispatchQueue.main.async { self?.cachedSessions = sessions }
+        }
+    }
+
+    @objc private func sendPhraseFromMenu(_ item: NSMenuItem) {
+        guard let phrase = item.representedObject as? Phrase else { return }
+        send(phrase)
+    }
+
+    @objc func editPhrases() {
+        Phrases.openInEditor()
+    }
+
+    @objc func showPhrasePanel() {
+        if phrasePanel.isOpen {
+            phrasePanel.close()
+            return
+        }
+        let phrases = Phrases.load()
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let sessions = (try? Sidecar.listSessions()) ?? []
+            let target = sessions.isEmpty
+                ? nil
+                : sessions.first(where: { $0.sessionId == Self.resolveSession(nil, in: sessions) })
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.cachedSessions = sessions
+                self.phrasePanel.show(phrases: phrases, target: target?.displayName) { phrase in
+                    self.send(phrase, to: target?.sessionId)
+                }
+            }
+        }
+    }
+
+    /// Send a phrase to the focused Claude session. Option inverts the phrase's
+    /// own send-or-type setting.
+    private func send(_ phrase: Phrase, to sessionId: String? = nil) {
+        let flipped = NSEvent.modifierFlags.contains(.option)
+        let submit = phrase.typeOnly ? flipped : !flipped
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                var sid = sessionId
+                if sid == nil {
+                    let sessions = try Sidecar.listSessions()
+                    guard !sessions.isEmpty else {
+                        throw SidecarError.failed("No Claude Code sessions found in iTerm2.")
+                    }
+                    sid = Self.resolveSession(nil, in: sessions)
+                }
+                guard let sid else { return }
+                try Sidecar.sendText(sessionId: sid, text: phrase.text, submit: submit)
+                DispatchQueue.main.async {
+                    UserDefaults.standard.set(sid, forKey: "lastSessionId")
+                    // Hand focus straight back so the run is visible without a Cmd-Tab.
+                    NSRunningApplication
+                        .runningApplications(withBundleIdentifier: "com.googlecode.iterm2")
+                        .first?
+                        .activate(options: [])
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.alert("Could not send the phrase: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     private func setIcon(recording: Bool) {
@@ -191,6 +334,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc func toggleClipboardDefault(_ item: NSMenuItem) {
+        let d = UserDefaults.standard
+        let enabled = !d.bool(forKey: "copyToClipboardDefault")
+        d.set(enabled, forKey: "copyToClipboardDefault")
+        item.state = enabled ? .on : .off
+    }
+
     // MARK: - iPad listener
 
     @objc func toggleListener(_ item: NSMenuItem) {
@@ -256,7 +406,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             if let m = sessions.first(where: { $0.displayName.contains(raw) }) { return m.sessionId }
         }
-        return sessions.first(where: { $0.isActive == true })?.sessionId ?? sessions.first!.sessionId
+        let lastUsed = UserDefaults.standard.string(forKey: "lastSessionId")
+        return sessions.first(where: { $0.isActive == true })?.sessionId
+            ?? sessions.first(where: { $0.sessionId == lastUsed })?.sessionId
+            ?? sessions.first!.sessionId
     }
 
     @objc func setUpIPadShortcut() {

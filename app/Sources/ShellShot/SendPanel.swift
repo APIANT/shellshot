@@ -19,6 +19,9 @@ struct SendView: View {
     let onSend: (_ sessionId: String, _ message: String, _ arrows: [Arrow], _ paths: [String]) -> Void
     let onCancel: () -> Void
 
+    private var clipboardIsDefault: Bool {
+        UserDefaults.standard.bool(forKey: "copyToClipboardDefault")
+    }
     private var isSequence: Bool { frames.count > 1 }
     private var shown: Frame { frames[min(shownIndex, frames.count - 1)] }
 
@@ -122,17 +125,19 @@ struct SendView: View {
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 19))
                 .focused($messageFocused)
-                .onSubmit { send() }
+                .onSubmit { clipboardIsDefault ? copyToClipboard() : send() }
 
             HStack {
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Copy to Clipboard", action: copyToClipboard)
-                    .keyboardShortcut("c", modifiers: [.command, .shift])
+                    .keyboardShortcut(clipboardIsDefault ? .defaultAction
+                                                         : KeyboardShortcut("c", modifiers: [.command, .shift]))
                     .disabled(frames.isEmpty)
                 Button("Send", action: send)
-                    .keyboardShortcut(.defaultAction)
+                    .keyboardShortcut(clipboardIsDefault ? KeyboardShortcut(.return, modifiers: .command)
+                                                         : .defaultAction)
                     .disabled(selected.isEmpty || frames.isEmpty)
             }
         }
